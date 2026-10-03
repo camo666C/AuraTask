@@ -13,6 +13,13 @@
 - Атомарное сохранение в JSON с защитой от повреждения при сбоях и автоматическим созданием бэкапа.
 - Настроенный GitHub Actions CI/CD для автосборки под Windows x64 и Win32 (x86).
 
+## Интерфейс
+
+| Активный список задач и фильтр | Быстрый поиск по задачам |
+| :---: | :---: |
+| ![AuraTask Active](docs/screenshots/auratask_active.png) | ![AuraTask Search](docs/screenshots/auratask_search.png) |
+
+
 ## Структура проекта
 
 ```text
