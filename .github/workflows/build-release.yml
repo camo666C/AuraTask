@@ -1,0 +1,94 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            python-arch: x64
+            artifact-name: AuraTask-x64.exe
+          - arch: win32
+            python-arch: x86
+            artifact-name: AuraTask-win32.exe
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11 (${{ matrix.python-arch }})
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: ${{ matrix.python-arch }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onefile --windowed --name "AuraTask-${{ matrix.arch }}" --collect-all customtkinter main.py
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: dist/AuraTask-${{ matrix.arch }}.exe
+
+  release:
+    name: Create Release v0.0.1
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release_assets
+          # Копируем бинарники из папок артефактов
+          find artifacts -type f -name "*.exe" -exec cp {} release_assets/ \;
+          ls -la release_assets/
+
+      - name: Publish or update Release v0.0.1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v0.0.1"
+
+          # Проверяем и удаляем старый релиз, если он существует
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Удаление предыдущего релиза $TAG_NAME..."
+            gh release delete "$TAG_NAME" --yes --cleanup-tag
+          fi
+
+          # Удаляем локальный и удаленный тег на случай расхождений
+          git tag -d "$TAG_NAME" 2>/dev/null || true
+          git push origin :refs/tags/"$TAG_NAME" 2>/dev/null || true
+
+          echo "Создание свежего релиза $TAG_NAME..."
+          gh release create "$TAG_NAME" \
+            release_assets/*.exe \
+            --title "AuraTask $TAG_NAME" \
+            --notes "Свежая сборка проекта AuraTask. Включает исполняемые файлы для Windows x64 и Win32 (x86)."

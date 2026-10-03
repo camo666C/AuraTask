@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Виртуальные окружения
+env/
+venv/
+ENV/
+.venv/
+
+# PyInstaller и сборка
+build/
+dist/
+*.spec
+
+# Хранилище задач и бэкапы
+tasks.json
+tasks.json.bak
+test_run_tasks.json
+*.bak
+
+# Редакторы
+.vscode/
+.idea/
+*.swp
